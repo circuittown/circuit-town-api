@@ -17,6 +17,7 @@
     "express": "^4.16.2",
     "lodash": "^4.17.4",
     "mysql": "^2.15.0",
+    "php-unserialize": "0.0.1",
     "prettyjson": "^1.2.1"
   },
   "devDependencies": {
