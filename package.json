@@ -1,0 +1,25 @@
+{
+  "name": "circuit-town-api",
+  "version": "1.0.0",
+  "description": "Circuit Town climbing game API.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js"
+  },
+  "bin": {
+    "ctown": "./index.js"
+  },
+  "author": "Gus Clemens <scrappergus@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "args": "^3.0.7",
+    "config": "^1.28.1",
+    "express": "^4.16.2",
+    "lodash": "^4.17.4",
+    "mysql": "^2.15.0",
+    "prettyjson": "^1.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.12.1"
+  }
+}

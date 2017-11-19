@@ -1,0 +1,6 @@
+{
+  "mongoUrl": "MongoDB URL",
+  "elasticsearchUrl" : "Elasticsearch culture host URL",
+  "elasticsearchIndex": "Elasticsearch index to use",
+  "ojsApi": "OJS mini-API host URL"
+}
