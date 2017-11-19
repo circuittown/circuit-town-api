@@ -83,7 +83,7 @@ function getAreas(args) {
 }
 
 function getDifficulty(args) {
-    var query = `select colour, colour_id, adjective, css,  english from colour order by colour_id`;
+    var query = `select colour, colour_id, adjective, css, english, font, verm from colour order by colour_id`;
     
     return new Promise(function(resolve,reject) {
         db.query(query, function (error, results, fields) {
