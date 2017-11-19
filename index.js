@@ -22,6 +22,7 @@ const db = mysql.createConnection(mysqlUrl);
 args.option('card', "Fetch a Circuit Town scorecard.");
 args.option('areas', "Fetch a full list of areas");
 args.option('difficulty', "Fetch a list of colors for difficulty.");
+args.option(['U','allusers'], "Fetch a list of all users.");
 args.option('server', "Launch a Circuit Town API server");
 args.option('port', "Specify a port for hosting the API server");
 const flags = args.parse(process.argv);
@@ -35,7 +36,6 @@ if(flags.areas) {
             process.exit();
         });
 }
-
 if(flags.difficulty) {
     getDifficulty()
         .then(function(res) {
@@ -44,7 +44,14 @@ if(flags.difficulty) {
             process.exit();
         });
 }
-
+if(flags.allusers) {
+    getAllusers()
+        .then(function(res) {
+            console.log("Circuit Town Master User List");
+            console.log(prettyjson.render(res));
+            process.exit();
+        });
+}
 if(flags.card) {
     if(_.isNumber(flags.card) === false) {
         console.log("Need a card ID, please.");
@@ -83,7 +90,13 @@ if(flags.server) {
             next();
         });
     })	
-
+    app.all("/api/getAllusers", function(req,res,next) {
+        getAllusers()
+        .then(function(allusers) {
+            res.send(allusers);
+            next();
+        });
+    })
     app.all("/api/getCard/:cardId", function(req,res,next) {
         getCard({cardId:req.params.cardId})
         .then(function(card) {
@@ -108,9 +121,18 @@ function getAreas() {
         });
     });
 }
-
 function getDifficulty(args) {
     var query = `select colour, colour_id, adjective, css, english, font, verm from colour order by colour_id`;
+    
+    return new Promise(function(resolve,reject) {
+        db.query(query, function (error, results, fields) {
+            if (error) throw error;
+            resolve(results);
+        });
+    });
+}
+function getAllusers(args) {
+    var query = `select user, md5, user_mast_id, approved, handle, weight, height, ape, weightkg from user_mast order by user_mast_id, approved`;
     
     return new Promise(function(resolve,reject) {
         db.query(query, function (error, results, fields) {
