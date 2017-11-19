@@ -20,6 +20,7 @@ const db = mysql.createConnection(mysqlUrl);
 // Argument formatting
 args.option('card', "Fetch a Circuit Town scorecard.");
 args.option('areas', "Fetch a full list of areas");
+args.option('difficulty', "Fetch a list of colors for difficulty.");
 args.option('server', "Launch a Circuit Town API server");
 args.option('port', "Specify a port for hosting the API server");
 const flags = args.parse(process.argv);
@@ -29,6 +30,14 @@ if(flags.areas) {
     getAreas()
         .then(function(res) {
             console.log("Circuit Town Areas");
+            console.log(prettyjson.render(res));
+            process.exit();
+        });
+}
+if(flags.difficulty) {
+    getDifficulty()
+        .then(function(res) {
+            console.log("Circuit Town Difficulty Colors");
             console.log(prettyjson.render(res));
             process.exit();
         });
@@ -49,6 +58,13 @@ if(flags.server) {
             next();
         });
     })
+    app.all("/api/getDifficulty", function(req,res,next) {
+        getDifficulty()
+        .then(function(difficulty) {
+            res.send(difficulty);
+            next();
+        });
+    })	
 }
 
 // Show help if nothing else
@@ -58,6 +74,17 @@ if(_.isEmpty(flags)) {args.showHelp();process.exit();}
 function getAreas(args) {
     var query = `select area, area_id, country_id, user_mast_id from areas where approved = 'yes' order by country_id, TRIM(LEADING 'the ' FROM LOWER('area'))`;
 
+    return new Promise(function(resolve,reject) {
+        db.query(query, function (error, results, fields) {
+            if (error) throw error;
+            resolve(results);
+        });
+    });
+}
+
+function getDifficulty(args) {
+    var query = `select colour, colour_id, adjective, css,  english from colour order by colour_id`;
+    
     return new Promise(function(resolve,reject) {
         db.query(query, function (error, results, fields) {
             if (error) throw error;
