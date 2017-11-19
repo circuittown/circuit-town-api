@@ -6,7 +6,8 @@ const config = require('config'),
     mysql = require('mysql'),
     prettyjson = require('prettyjson'),
     _ = require('lodash'),
-    express = require('express')
+    express = require('express'),
+    PHPUnserialize = require('php-unserialize')
 ;
 
 // Grab config values
@@ -34,6 +35,7 @@ if(flags.areas) {
             process.exit();
         });
 }
+
 if(flags.difficulty) {
     getDifficulty()
         .then(function(res) {
@@ -42,6 +44,22 @@ if(flags.difficulty) {
             process.exit();
         });
 }
+
+if(flags.card) {
+    if(_.isNumber(flags.card) === false) {
+        console.log("Need a card ID, please.");
+        process.exit();
+    }
+    else {
+        getCard({cardId:flags.card})
+            .then(function(res) {
+                console.log(`Card #${flags.card}`);
+                console.log(prettyjson.render(res));
+                process.exit();
+            });
+    }
+}
+
 if(flags.server) {
     // Fire up a Circuit Town HTTP API server
     const app = express(),
@@ -65,13 +83,22 @@ if(flags.server) {
             next();
         });
     })	
+
+    app.all("/api/getCard/:cardId", function(req,res,next) {
+        getCard({cardId:req.params.cardId})
+        .then(function(card) {
+            res.send(card);
+            next();
+        });
+    })
+
 }
 
 // Show help if nothing else
 if(_.isEmpty(flags)) {args.showHelp();process.exit();}
 
 // Circuit Town logic
-function getAreas(args) {
+function getAreas() {
     var query = `select area, area_id, country_id, user_mast_id from areas where approved = 'yes' order by country_id, TRIM(LEADING 'the ' FROM LOWER('area'))`;
 
     return new Promise(function(resolve,reject) {
@@ -89,6 +116,28 @@ function getDifficulty(args) {
         db.query(query, function (error, results, fields) {
             if (error) throw error;
             resolve(results);
+        });
+    });
+}
+function getCard(args) {
+    var cardId = args.cardId;
+    var scq = `select card_id, circuit_id, user_mast_id, right_now, comment, card, coursepar, userpar from cards WHERE card_id = ${cardId}`;
+
+    return new Promise(function(resolve,reject) {
+        db.query(scq, function (error, results, fields) {
+            if (error) throw error;
+            var card = results[0];
+
+            card.comment = card.comment.toString();
+
+            var scoreData = PHPUnserialize.unserialize(card.card);
+            var score = [];
+            _.forEach(scoreData[0], function(it, key) {
+                 score.push({name:it, par:scoreData[1][key], score:scoreData[1][key]});
+            });
+            card.card = score;
+
+            resolve(card);
         });
     });
 }
