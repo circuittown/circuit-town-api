@@ -23,6 +23,7 @@ args.option('card', "Fetch a Circuit Town scorecard.");
 args.option('areas', "Fetch a full list of areas");
 args.option('difficulty', "Fetch a list of colors for difficulty.");
 args.option(['U','allusers'], "Fetch a list of all users.");
+args.option('user', "Fetch a user detail");
 args.option('server', "Launch a Circuit Town API server");
 args.option('port', "Specify a port for hosting the API server");
 const flags = args.parse(process.argv);
@@ -51,6 +52,20 @@ if(flags.allusers) {
             console.log(prettyjson.render(res));
             process.exit();
         });
+}
+if(flags.user) {
+	if(_.isNumber(flags.user) === false) {
+        	console.log("Need a user ID, please.");
+		process.exit();
+	}
+	else {
+        getUser({userId:flags.user})
+            .then(function(res) {
+                console.log(`User #${flags.user}`);
+                console.log(prettyjson.render(res));
+                process.exit();
+            });
+	}
 }
 if(flags.card) {
     if(_.isNumber(flags.card) === false) {
@@ -97,6 +112,13 @@ if(flags.server) {
             next();
         });
     })
+    app.all("/api/getUser/:userId", function(req,res,next) {
+        getUser({userId:req.params.userId})
+        .then(function(user) {
+            res.send(user);
+            next();
+        });
+    })
     app.all("/api/getCard/:cardId", function(req,res,next) {
         getCard({cardId:req.params.cardId})
         .then(function(card) {
@@ -134,6 +156,17 @@ function getDifficulty(args) {
 function getAllusers(args) {
     var query = `select user, md5, user_mast_id, approved, handle, weight, height, ape, weightkg from user_mast order by user_mast_id, approved`;
     
+    return new Promise(function(resolve,reject) {
+        db.query(query, function (error, results, fields) {
+            if (error) throw error;
+            resolve(results);
+        });
+    });
+}
+function getUser(args) {
+    var userId = args.userId;
+    var query = `select user, md5, user_mast_id, approved, handle, weight, height, ape, weightkg from user_mast where user_mast_id = ${userId}`;
+
     return new Promise(function(resolve,reject) {
         db.query(query, function (error, results, fields) {
             if (error) throw error;
