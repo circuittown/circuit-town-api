@@ -19,12 +19,13 @@ const db = mysql.createConnection(mysqlUrl);
 
 
 // Argument formatting
-args.option('card', "Fetch a Circuit Town scorecard.");
+args.option('scorecard', "Fetch a Circuit Town scorecard.");
 args.option('areas', "Fetch a full list of areas");
 args.option('difficulty', "Fetch a list of colors for difficulty.");
 args.option(['U','allusers'], "Fetch a list of all users.");
 args.option('user', "Fetch a user detail");
-args.option('server', "Launch a Circuit Town API server");
+args.option('circuit','Fetch a circuit.');
+args.option(['S','server'], "Launch a Circuit Town API server");
 args.option('port', "Specify a port for hosting the API server");
 const flags = args.parse(process.argv);
 
@@ -67,15 +68,29 @@ if(flags.user) {
             });
 	}
 }
-if(flags.card) {
-    if(_.isNumber(flags.card) === false) {
+if(flags.circuit) {
+        if(_.isNumber(flags.circuit) === false) {
+                console.log("Need a circuit ID, please.");
+                process.exit();
+        }
+        else {
+        getCircuit({circuitId:flags.circuit})   
+            .then(function(res) {
+                console.log(`Circuit #${flags.circuit}`);
+                console.log(prettyjson.render(res));
+                process.exit();
+            });
+        }
+}
+if(flags.scorecard) {
+    if(_.isNumber(flags.scorecard) === false) {
         console.log("Need a card ID, please.");
         process.exit();
     }
     else {
-        getCard({cardId:flags.card})
+        getCard({cardId:flags.scorecard})
             .then(function(res) {
-                console.log(`Card #${flags.card}`);
+                console.log(`Card #${flags.scorecard}`);
                 console.log(prettyjson.render(res));
                 process.exit();
             });
@@ -119,10 +134,17 @@ if(flags.server) {
             next();
         });
     })
+    app.all("/api/getCircuit/:circuitId", function(req,res,next) {
+        getCircuit({circuitId:req.params.circuitId})
+        .then(function(circuit) {
+            res.send(circuit);
+            next();
+        });
+    })
     app.all("/api/getCard/:cardId", function(req,res,next) {
         getCard({cardId:req.params.cardId})
-        .then(function(card) {
-            res.send(card);
+        .then(function(scorecard) {
+            res.send(scorecard);
             next();
         });
     })
@@ -166,6 +188,17 @@ function getAllusers(args) {
 function getUser(args) {
     var userId = args.userId;
     var query = `select user, md5, user_mast_id, approved, handle, weight, height, ape, weightkg from user_mast where user_mast_id = ${userId}`;
+
+    return new Promise(function(resolve,reject) {
+        db.query(query, function (error, results, fields) {
+            if (error) throw error;
+            resolve(results);
+        });
+    });
+}
+function getCircuit(args) {
+    var circuitId = args.circuitId;
+    var query = `select circuit, area_id, is_subarea, colour, user_mast_id from circuit where circuit_id = ${circuitId}`;
 
     return new Promise(function(resolve,reject) {
         db.query(query, function (error, results, fields) {
