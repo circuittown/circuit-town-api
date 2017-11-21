@@ -19,14 +19,14 @@ const db = mysql.createConnection(mysqlUrl);
 
 
 // Argument formatting
-args.option('scorecard', "Fetch a Circuit Town scorecard.");
 args.option('areas', "Fetch a full list of areas");
 args.option('difficulty', "Fetch a list of colors for difficulty.");
-args.option(['U','allusers'], "Fetch a list of all users.");
-args.option('user', "Fetch a user detail");
 args.option('circuit','Fetch a circuit.');
-args.option(['S','server'], "Launch a Circuit Town API server");
 args.option('port', "Specify a port for hosting the API server");
+args.option('scorecard', "Fetch a Circuit Town scorecard.");
+args.option(['S','server'], "Launch a Circuit Town API server");
+args.option('user', "Fetch a user detail");
+args.option(['U','allusers'], "Fetch a list of all users.");
 const flags = args.parse(process.argv);
 
 // The routes
