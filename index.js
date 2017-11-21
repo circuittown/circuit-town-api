@@ -221,7 +221,7 @@ function getCard(args) {
             var scoreData = PHPUnserialize.unserialize(card.card);
             var score = [];
             _.forEach(scoreData[0], function(it, key) {
-                 score.push({name:it, par:scoreData[1][key], score:scoreData[1][key]});
+                 score.push({name:it, par:scoreData[1][key], score:scoreData[2][key]});
             });
             card.card = score;
 
