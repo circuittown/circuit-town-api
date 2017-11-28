@@ -203,7 +203,21 @@ function getCircuit(args) {
     return new Promise(function(resolve,reject) {
         db.query(query, function (error, results, fields) {
             if (error) throw error;
-            resolve(results);
+            var circ = results[0];
+            if (circ.is_subarea == "yes") {
+                var subarea_id = circ.area_id;
+                var saq = `select subarea, area_id from subareas where subarea_id = ${subarea_id}`;
+                db.query(saq, function(error, subresults, fields) {
+                    if (error) throw error;
+                    var subarea = subresults[0];
+                    // i dont understand. i cant access subarea from outside this query
+                });
+                // placeholders
+                circ['area'] = "subarea";
+            } else {
+                circ['area'] = "area";
+            }
+            resolve(circ);
         });
     });
 }
