@@ -210,14 +210,14 @@ function getCircuit(args) {
                 db.query(saq, function(error, subresults, fields) {
                     if (error) throw error;
                     var subarea = subresults[0];
-                    // i dont understand. i cant access subarea from outside this query
+                    // placeholders
+                    circ['area'] = "subarea";
+                    resolve(circ);
                 });
-                // placeholders
-                circ['area'] = "subarea";
             } else {
                 circ['area'] = "area";
+                resolve(circ);
             }
-            resolve(circ);
         });
     });
 }
