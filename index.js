@@ -136,7 +136,7 @@ if(flags.server) {
         });
     })	
     app.all("/api/getColour/:colour", function(req,res,next) {
-        getUser({coloir:req.params.colour})
+        getColour({colour:req.params.colour})
         .then(function(colour) {
             res.send(colour);
             next();
