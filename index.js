@@ -23,7 +23,8 @@ args.option('areas', "Fetch a full list of areas");
 args.option('difficulty', "Fetch a list of colors for difficulty.");
 args.option(['D', 'colour'], "Fetch a colour and details.");
 args.option('circuit','Fetch a circuit.');
-args.option('port', "Specify a port for hosting the API server");
+args.option(['p','problems'], "Fetch a list of problems for a circuit.");
+args.option(['P','port'], "Specify a port for hosting the API server");
 args.option('scorecard', "Fetch a Circuit Town scorecard.");
 args.option(['S','server'], "Launch a Circuit Town API server");
 args.option('user', "Fetch a user detail");
@@ -97,6 +98,20 @@ if(flags.circuit) {
             });
         }
 }
+if(flags.problems) {
+        if(_.isNumber(flags.problems) === false) {
+                console.log("Need a circuit ID, please.");
+                process.exit();
+        }
+        else {
+        getProblems({circuitId:flags.problems})
+            .then(function(res) {
+                console.log(`Circuit #${flags.problems}`);
+                console.log(prettyjson.render(res));
+                process.exit();
+            });
+        }
+}
 if(flags.scorecard) {
     if(_.isNumber(flags.scorecard) === false) {
         console.log("Need a card ID, please.");
@@ -160,6 +175,13 @@ if(flags.server) {
         getCircuit({circuitId:req.params.circuitId})
         .then(function(circuit) {
             res.send(circuit);
+            next();
+        });
+    })
+    app.all("/api/getProblems/:circuitId", function(req,res,next) {
+        getProblems({circuitId:req.params.circuitId})
+        .then(function(problems) {
+            res.send(problems);
             next();
         });
     })
@@ -297,7 +319,43 @@ cirq_comments.user_mast_id=user_mast.user_mast_id where cirq_comments.circuit_id
             return circ;
         });
 }
+function getProblems(args) {
+    var circuitId = args.circuitId;
+    var query = `select cp_id, problem, par from circuit_problems where circuit_id = ${circuitId} order by problem_order`;
 
+    var problems = {};
+    return new Promise(function(resolve,reject) {
+        db.query(query, function (error, results, fields) {
+            if (error) throw error;
+
+            // By leaving off the var keyword here, we keep using the circ creating above, so we retain our scope that can be used by any callback below
+            problems = results[0];
+
+            // Dummy resolve that moves us to the next promise
+            resolve(0);
+        });
+    })
+	.then(function() {
+            return new Promise(function(resolve,reject) {
+		var pname = problems.problem;
+                var pcq = `select problem_comments.user_mast_id, problem_comments.right_now, user_mast.handle, problem_comments.comment, problem_comments.pc_id from problem_comments 
+inner join user_mast on problem_comments.user_mast_id=user_mast.user_mast_id where problem_comments.problem = '${pname}' and problem_comments.circuit_id = ${circuitId}`;
+                db.query(pcq, function(error, pcresults, fields) {
+                    if (error) throw error;
+                    problems.comments = [];
+                    _.forEach(pcresults, function(it, key) {
+                        problems.comments.push({comment:it.comment.toString(), handle:it.handle, user_mast_id:it.user_mast_id, pc_id:it.pc_id, right_now:it.right_now})
+                    });
+
+                    resolve(0);
+                });
+            });
+        })
+	.then(function() {
+            // our finished circuit object
+            return problems;
+        });
+}
 function getCard(args) {
     var cardId = args.cardId;
     var scq = `select card_id, circuit_id, user_mast_id, right_now, comment, card, coursepar, userpar from cards WHERE card_id = ${cardId}`;
