@@ -332,22 +332,30 @@ function getProblems(args) {
         });
     })
 	.then(function() {
-            return new Promise(function(resolve,reject) {
-		var pname = problems.problem;
-                var pcq = `select problem_comments.user_mast_id, problem_comments.right_now, user_mast.handle, problem_comments.comment, problem_comments.pc_id from problem_comments 
-inner join user_mast on problem_comments.user_mast_id=user_mast.user_mast_id where problem_comments.problem = '${pname}' and problem_comments.circuit_id = ${circuitId}`;
-                db.query(pcq, function(error, pcresults, fields) {
-                    if (error) throw error;
-                    problems.comments = [];
-                    _.forEach(pcresults, function(it, key) {
-                        problems.comments.push({comment:it.comment.toString(), handle:it.handle, user_mast_id:it.user_mast_id, pc_id:it.pc_id, right_now:it.right_now})
-                    });
+        var proms = [];
 
-                    resolve(0);
-                });
-            });
-        })
-	.then(function() {
+        _.forEach(problems, function(val,problemKey) {
+            proms.push(
+                        new Promise(function(resolve,reject) {
+                            var pname = val.problem;
+                            var pcq = `select problem_comments.user_mast_id, problem_comments.right_now, user_mast.handle, problem_comments.comment, problem_comments.pc_id from problem_comments 
+                            inner join user_mast on problem_comments.user_mast_id=user_mast.user_mast_id where problem_comments.problem = "${pname}" and problem_comments.circuit_id = ${circuitId}`;
+                            db.query(pcq, function(error, pcresults, fields) {
+                                if (error) throw error;
+                                _.forEach(pcresults, function(it, key) {
+                                    if(problems[problemKey].comments === undefined) problems[problemKey].comments = [];
+                                    problems[problemKey].comments.push({comment:it.comment.toString(), handle:it.handle, user_mast_id:it.user_mast_id, pc_id:it.pc_id, right_now:it.right_now})
+                                });
+
+                                resolve(0);
+                            });
+                        })
+            );
+        });
+
+        return Promise.all(proms);
+    })
+        .then(function() {
             // our finished circuit object
             return problems;
         });
