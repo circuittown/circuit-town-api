@@ -200,26 +200,52 @@ function getCircuit(args) {
     var circuitId = args.circuitId;
     var query = `select circuit, area_id, is_subarea, colour, user_mast_id from circuit where circuit_id = ${circuitId}`;
 
+    // Using var before this definition socpes it locally to the getCircuit function, but above all the callbacks that are about to happen, so they can "share" the circ object we're creating 
+    var circ = {}; 
+
     return new Promise(function(resolve,reject) {
         db.query(query, function (error, results, fields) {
             if (error) throw error;
-            var circ = results[0];
-            if (circ.is_subarea == "yes") {
-                var subarea_id = circ.area_id;
-                var saq = `select subarea, area_id from subareas where subarea_id = ${subarea_id}`;
-                db.query(saq, function(error, subresults, fields) {
-                    if (error) throw error;
-                    var subarea = subresults[0];
-                    circ['subarea'] = subarea.subarea;
-                    circ.area_id = subarea.area_id;
-                    resolve(circ);
-                });
-            } else {
-                resolve(circ);
-            }
+
+            // By leaving off the var keyword here, we keep using the circ creating above, so we retain our scope that can be used by any callback below
+            circ = results[0];
+
+            // Dummy resolve that moves us to the next promise
+            resolve(0);
         });
-    });
+    })
+        .then(function() {
+            return new Promise(function(resolve,reject) {
+                if (circ.is_subarea == "yes") {
+                    var subarea_id = circ.area_id;
+                    var saq = `select subarea, area_id from subareas where subarea_id = ${subarea_id}`;
+                    db.query(saq, function(error, subresults, fields) {
+                        if (error) throw error;
+                        var subarea = subresults[0];
+                        circ['subarea'] = subarea.subarea;
+                        circ.area_id = subarea.area_id;
+                        resolve(0);
+                    });
+                } else {
+                    resolve(0);
+                }
+
+            });
+        })
+        .then(function() {
+            return new Promise(function(resolve,reject) {
+
+                //This is where you'd do the area name fetching
+
+                resolve(0);
+            });
+        })
+        .then(function() {
+            // our finished circuit object
+            return circ;
+        });
 }
+
 function getCard(args) {
     var cardId = args.cardId;
     var scq = `select card_id, circuit_id, user_mast_id, right_now, comment, card, coursepar, userpar from cards WHERE card_id = ${cardId}`;
