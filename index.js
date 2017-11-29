@@ -245,6 +245,16 @@ function getCircuit(args) {
             });
         })
         .then(function() {
+            return new Promise(function(resolve,reject) {
+                var ccq = `select cirq_comments.user_mast_id, cirq_comments.right_now, user_mast.handle, cirq_comments.comment, cirq_comments.cc_id from cirq_comments inner join user_mast on cirq_comments.user_mast_id=user_mast.user_mast_id where cirq_comments.circuit_id = {circuitId}`;
+                db.query(aq, function(error, ccresults, fields) {
+                    if (error) throw error;
+                    var cc = ccresults[0];
+                    resolve(0);                    
+                });
+            });
+        })
+        .then(function() {
             // our finished circuit object
             return circ;
         });
