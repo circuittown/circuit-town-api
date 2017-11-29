@@ -211,7 +211,7 @@ function getCircuit(args) {
                     if (error) throw error;
                     var subarea = subresults[0];
                     // placeholders
-                    circ['area'] = "subarea";
+                    circ['area'] = subarea.subarea;
                     resolve(circ);
                 });
             } else {
