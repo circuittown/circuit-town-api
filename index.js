@@ -200,7 +200,7 @@ function getCircuit(args) {
     var circuitId = args.circuitId;
     var query = `select circuit, area_id, is_subarea, colour, user_mast_id from circuit where circuit_id = ${circuitId}`;
 
-    // Using var before this definition socpes it locally to the getCircuit function, but above all the callbacks that are about to happen, so they can "share" the circ object we're creating 
+    // Using var before this definition scopes it locally to the getCircuit function, but above all the callbacks that are about to happen, so they can "share" the circ object we're creating 
     var circ = {}; 
 
     return new Promise(function(resolve,reject) {
@@ -234,10 +234,14 @@ function getCircuit(args) {
         })
         .then(function() {
             return new Promise(function(resolve,reject) {
-
-                //This is where you'd do the area name fetching
-
-                resolve(0);
+                var area_id = circ.area_id;
+                aq = `select area from areas where area_id = ${area_id}`;
+                db.query(aq, function(error, aresults, fields) {
+                    if (error) throw error;
+                    var area = aresults[0];
+                    circ['area'] = area.area;
+                    resolve(0);
+                });
             });
         })
         .then(function() {
