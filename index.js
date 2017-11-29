@@ -21,6 +21,7 @@ const db = mysql.createConnection(mysqlUrl);
 // Argument formatting
 args.option('areas', "Fetch a full list of areas");
 args.option('difficulty', "Fetch a list of colors for difficulty.");
+args.option(['D', 'colour'], "Fetch a colour and details.");
 args.option('circuit','Fetch a circuit.');
 args.option('port', "Specify a port for hosting the API server");
 args.option('scorecard', "Fetch a Circuit Town scorecard.");
@@ -45,6 +46,20 @@ if(flags.difficulty) {
             console.log(prettyjson.render(res));
             process.exit();
         });
+}
+if(flags.colour) {
+    var allowedColours = ['white', 'yellow', 'orange', 'blue', 'red', 'black', 'pink'];
+    if(allowedColours.indexOf(flags.colour) == -1) {
+        console.log("Need a colour, please.");
+        process.exit();
+    } else {
+        getColour({colour:flags.colour})
+            .then(function(res) {
+                console.log(`Colour #${flags.colour}`);
+                console.log(prettyjson.render(res));
+                process.exit();
+            });
+    } 
 }
 if(flags.allusers) {
     getAllusers()
@@ -120,6 +135,13 @@ if(flags.server) {
             next();
         });
     })	
+    app.all("/api/getColour/:colour", function(req,res,next) {
+        getUser({coloir:req.params.colour})
+        .then(function(colour) {
+            res.send(colour);
+            next();
+        });
+    })
     app.all("/api/getAllusers", function(req,res,next) {
         getAllusers()
         .then(function(allusers) {
@@ -172,6 +194,17 @@ function getDifficulty(args) {
         db.query(query, function (error, results, fields) {
             if (error) throw error;
             resolve(results);
+        });
+    });
+}
+function getColour(args) {
+    var colour = args.colour;
+    var query = `select colour, colour_id, adjective, css, english, font, verm from colour where colour = '${colour}'`;
+    return new Promise(function(resolve,reject) {
+        db.query(query, function (error, results, fields) {
+            if (error) throw error;
+            var colour = results[0];
+            resolve(colour);
         });
     });
 }
