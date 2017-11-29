@@ -321,7 +321,7 @@ cirq_comments.user_mast_id=user_mast.user_mast_id where cirq_comments.circuit_id
 }
 function getProblems(args) {
     var circuitId = args.circuitId;
-    var query = `select cp_id, problem, par from circuit_problems where circuit_id = ${circuitId} order by problem_order`;
+    var query = `select problem_order, cp_id, problem, par from circuit_problems where circuit_id = ${circuitId} order by problem_order`;
 
     var problems = [];
     return new Promise(function(resolve,reject) {
