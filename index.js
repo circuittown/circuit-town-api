@@ -323,15 +323,11 @@ function getProblems(args) {
     var circuitId = args.circuitId;
     var query = `select cp_id, problem, par from circuit_problems where circuit_id = ${circuitId} order by problem_order`;
 
-    var problems = {};
+    var problems = [];
     return new Promise(function(resolve,reject) {
         db.query(query, function (error, results, fields) {
             if (error) throw error;
-
-            // By leaving off the var keyword here, we keep using the circ creating above, so we retain our scope that can be used by any callback below
-            problems = results[0];
-
-            // Dummy resolve that moves us to the next promise
+            problems = results;
             resolve(0);
         });
     })
