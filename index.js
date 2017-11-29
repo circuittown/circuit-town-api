@@ -210,12 +210,11 @@ function getCircuit(args) {
                 db.query(saq, function(error, subresults, fields) {
                     if (error) throw error;
                     var subarea = subresults[0];
-                    // placeholders
-                    circ['area'] = subarea.subarea;
+                    circ['subarea'] = subarea.subarea;
+                    circ.area_id = subarea.area_id;
                     resolve(circ);
                 });
             } else {
-                circ['area'] = "area";
                 resolve(circ);
             }
         });
