@@ -246,10 +246,15 @@ function getCircuit(args) {
         })
         .then(function() {
             return new Promise(function(resolve,reject) {
-                var ccq = `select cirq_comments.user_mast_id, cirq_comments.right_now, user_mast.handle, cirq_comments.comment, cirq_comments.cc_id from cirq_comments inner join user_mast on cirq_comments.user_mast_id=user_mast.user_mast_id where cirq_comments.circuit_id = {circuitId}`;
-                db.query(aq, function(error, ccresults, fields) {
+                var ccq = `select cirq_comments.user_mast_id, cirq_comments.right_now, user_mast.handle, cirq_comments.comment, cirq_comments.cc_id from cirq_comments inner join user_mast on 
+cirq_comments.user_mast_id=user_mast.user_mast_id where cirq_comments.circuit_id = ${circuitId}`;
+                db.query(ccq, function(error, ccresults, fields) {
                     if (error) throw error;
-                    var cc = ccresults[0];
+                    circ.comments = [];
+                    _.forEach(ccresults, function(it, key) {
+                        circ.comments.push({comment:it.comment.toString(), handle:it.handle, user_mast_id:it.user_mast_id, cc_id:it.cc_id, right_now:it.right_now})
+                    });
+                                    
                     resolve(0);                    
                 });
             });
