@@ -8,6 +8,7 @@ const config = require('config'),
     _ = require('lodash'),
     express = require('express'),
     PHPUnserialize = require('php-unserialize')
+    moment = require('moment');
 ;
 
 // Grab config values
@@ -306,10 +307,12 @@ cirq_comments.user_mast_id=user_mast.user_mast_id where cirq_comments.circuit_id
                 db.query(ccq, function(error, ccresults, fields) {
                     if (error) throw error;
                     circ.comments = [];
+                    var f_right_now;
                     _.forEach(ccresults, function(it, key) {
-                        circ.comments.push({comment:it.comment.toString(), handle:it.handle, user_mast_id:it.user_mast_id, cc_id:it.cc_id, right_now:it.right_now})
+                        f_right_now = it.right_now;
+                        f_right_now = moment(f_right_now).format("MMM DD, YYYY");
+                        circ.comments.push({comment:it.comment.toString(), handle:it.handle, user_mast_id:it.user_mast_id, cc_id:it.cc_id, right_now:f_right_now})
                     });
-                                    
                     resolve(0);                    
                 });
             });
@@ -342,9 +345,12 @@ function getProblems(args) {
                             inner join user_mast on problem_comments.user_mast_id=user_mast.user_mast_id where problem_comments.problem = "${pname}" and problem_comments.circuit_id = ${circuitId}`;
                             db.query(pcq, function(error, pcresults, fields) {
                                 if (error) throw error;
+                                var f_right_now;
                                 _.forEach(pcresults, function(it, key) {
                                     if(problems[problemKey].comments === undefined) problems[problemKey].comments = [];
-                                    problems[problemKey].comments.push({comment:it.comment.toString(), handle:it.handle, user_mast_id:it.user_mast_id, pc_id:it.pc_id, right_now:it.right_now})
+                                    f_right_now = it.right_now;
+                                    f_right_now = moment(f_right_now).format("MMM DD, YYYY");
+                                    problems[problemKey].comments.push({comment:it.comment.toString(), handle:it.handle, user_mast_id:it.user_mast_id, pc_id:it.pc_id, right_now:f_right_now})
                                 });
 
                                 resolve(0);
