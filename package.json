@@ -7,12 +7,13 @@
     "dev": "nodemon index.js"
   },
   "bin": {
-    "ctown": "./index.js"
+    "ctown": "./index.js",
+    "ctwon": "./index.js"
   },
   "author": "Gus Clemens <scrappergus@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "args": "^3.0.7",
+    "args": "^3.0.8",
     "config": "^1.28.1",
     "express": "^4.16.2",
     "lodash": "^4.17.4",
