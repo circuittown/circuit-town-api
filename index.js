@@ -24,6 +24,7 @@ args.option('areas', "Fetch a full list of areas");
 args.option('difficulty', "Fetch a list of colors for difficulty.");
 args.option(['D', 'colour'], "Fetch a colour and details.");
 args.option('circuit','Fetch a circuit.');
+args.option(['C', 'allcircuits'], "full list of cirqs newest to oldest");
 args.option(['p','problems'], "Fetch a list of problems for a circuit.");
 args.option(['P','port'], "Specify a port for hosting the API server");
 args.option('scorecard', "Fetch a Circuit Town scorecard.");
@@ -98,6 +99,14 @@ if(flags.circuit) {
                 process.exit();
             });
         }
+}
+if(flags.allcircuits) {
+	getAllcircuits()
+        .then(function(res) {
+            console.log("Circuit Town Master Circuit List");
+            console.log(prettyjson.render(res));
+            process.exit();
+        });
 }
 if(flags.problems) {
         if(_.isNumber(flags.problems) === false) {
@@ -176,6 +185,13 @@ if(flags.server) {
         getCircuit({circuitId:req.params.circuitId})
         .then(function(circuit) {
             res.send(circuit);
+            next();
+        });
+    })
+    app.all("/api/getAllcircuits", function(req,res,next) {
+        getAllcircuits()
+        .then(function(allcircuits) {
+            res.send(allcircuits);
             next();
         });
     })
@@ -322,6 +338,16 @@ cirq_comments.user_mast_id=user_mast.user_mast_id where cirq_comments.circuit_id
             return circ;
         });
 }
+function getAllcircuits(args) {
+    var query = `select circuit_id, circuit, area_id, approved, is_subarea, colour, user_mast_id from circuit order by circuit_id desc`;
+
+    return new Promise(function(resolve,reject) {
+        db.query(query, function (error, results, fields) {
+            if (error) throw error;
+            resolve(results);   
+        });
+    });
+}
 function getProblems(args) {
     var circuitId = args.circuitId;
     var query = `select problem_order, cp_id, problem, par from circuit_problems where circuit_id = ${circuitId} order by problem_order`;
@@ -350,7 +376,7 @@ function getProblems(args) {
                                     if(problems[problemKey].comments === undefined) problems[problemKey].comments = [];
                                     f_right_now = it.right_now;
                                     f_right_now = moment(f_right_now).format("MMM DD, YYYY");
-                                    problems[problemKey].comments.push({comment:it.comment.toString(), handle:it.handle, user_mast_id:it.user_mast_id, pc_id:it.pc_id, right_now:f_right_now})
+                                    problems[problemKey].comments.push({comment:it.comment.toString(), handle:it.handle, user_mast_id:it.user_mast_id, pc_id:it.pc_id, right_now:it.right_now})
                                 });
 
                                 resolve(0);
