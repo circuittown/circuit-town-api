@@ -273,8 +273,9 @@ function getAreas() {
             _.forEach(areas, function(area, key) {
                 proms.push(new Promise(function(resolve,reject) {
                     if(_.isNumber(area.area_id)) {
-                        var query = ` SELECT circuit_id, circuit, area_id, is_subarea, colour 
+                        var query = ` SELECT circuit.*, user_mast.handle 
                         FROM circuit 
+                        JOIN user_mast ON user_mast.user_mast_id = circuit.user_mast_id
                         WHERE area_id = ${area.area_id} and is_subarea = "no"
                         ORDER BY circuit `;
 
@@ -288,7 +289,9 @@ function getAreas() {
                                     areas[key].circuits.push({
                                         circuit_id:circ.circuit_id,
                                         circuit:circ.circuit,
-                                        colour:circ.colour
+                                        colour:circ.colour,
+                                        user_mast_id:circ.user_mast_id,
+                                        handle:circ.handle
                                     });
                                 });
                             }
@@ -310,8 +313,9 @@ function getAreas() {
                 _.forEach(area.subareas, function(subarea, subkey) {
 
                     proms.push(new Promise(function(resolve,reject) {
-                        var query = ` SELECT circuit_id, circuit, area_id, is_subarea, colour 
+                        var query = ` SELECT circuit.*, user_mast.handle
                         FROM circuit 
+                        JOIN user_mast ON user_mast.user_mast_id = circuit.user_mast_id
                         WHERE area_id = ${subarea.subarea_id} and is_subarea = "yes"
                         ORDER BY circuit `;
 
@@ -324,7 +328,9 @@ function getAreas() {
                                     areas[key].subareas[subkey].circuits.push({
                                         circuit_id:circ.circuit_id,
                                         circuit:circ.circuit,
-                                        colour:circ.colour
+                                        colour:circ.colour,
+                                        user_mast_id:circ.user_mast_id,
+                                        handle:circ.handle
                                     });
                                 });
                             }
