@@ -7,8 +7,8 @@ const config = require('config'),
     prettyjson = require('prettyjson'),
     _ = require('lodash'),
     express = require('express'),
-    PHPUnserialize = require('php-unserialize')
-    moment = require('moment');
+    PHPUnserialize = require('php-unserialize'),
+    moment = require('moment')
 ;
 
 // Grab config values
@@ -217,14 +217,54 @@ if(_.isEmpty(flags)) {args.showHelp();process.exit();}
 
 // Circuit Town logic
 function getAreas() {
-    var query = `select area, area_id, country_id, user_mast_id from areas where approved = 'yes' order by country_id, TRIM(LEADING 'the ' FROM LOWER('area'))`;
-
     return new Promise(function(resolve,reject) {
+        var query = `SELECT area, area_id, country_id, areas.user_mast_id, user_mast.handle
+        FROM areas
+        JOIN user_mast ON user_mast.user_mast_id = areas.user_mast_id
+        WHERE areas.approved = 'yes'
+        ORDER by country_id,
+            TRIM(LEADING 'the ' FROM LOWER('area'))`;
+
         db.query(query, function (error, results, fields) {
             if (error) throw error;
             resolve(results);
         });
-    });
+    })
+        .then(function(docs) {
+            var proms = [];
+            _.forEach(docs, function(doc) {
+                proms.push(new Promise(function(resolve,reject) {
+                    if(_.isNumber(doc.area_id)) {
+                        var query = `SELECT subareas.*, user_mast.handle
+                        FROM subareas 
+                        JOIN user_mast ON user_mast.user_mast_id = subareas.user_mast_id
+                        WHERE area_id = ${doc.area_id} 
+                        ORDER by subarea`;
+
+                        db.query(query, function (error, results, fields) {
+                            if (error) throw error;
+                            if(results.length > 0) doc.subareas = [];
+
+                            _.forEach(results, function(subarea) {
+                                doc.subareas.push({
+                                    subarea:subarea.subarea,
+                                    user:subarea.handle,
+                                    user_mast_id:subarea.user_mast_id
+                                });
+                            });
+
+                            resolve(doc);
+                        });
+                    }
+                    else {
+                        resolve(doc);
+                    }
+                }));
+            });
+
+            return Promise.all(proms);
+        })
+    ;
 }
 function getDifficulty(args) {
     var query = `select colour, colour_id, adjective, css, english, font, verm from colour order by colour_id`;
