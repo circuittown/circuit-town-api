@@ -217,6 +217,7 @@ if(_.isEmpty(flags)) {args.showHelp();process.exit();}
 
 // Circuit Town logic
 function getAreas() {
+    var areas; // the json that we'll return
     return new Promise(function(resolve,reject) {
         var query = `SELECT area, area_id, country_id, areas.user_mast_id, user_mast.handle
         FROM areas
@@ -230,39 +231,115 @@ function getAreas() {
             resolve(results);
         });
     })
-        .then(function(docs) {
+        .then(function(res) {
+            areas = res;
             var proms = [];
-            _.forEach(docs, function(doc) {
+            _.forEach(areas, function(area, key) {
                 proms.push(new Promise(function(resolve,reject) {
-                    if(_.isNumber(doc.area_id)) {
+                    if(_.isNumber(area.area_id)) {
                         var query = `SELECT subareas.*, user_mast.handle
                         FROM subareas 
                         JOIN user_mast ON user_mast.user_mast_id = subareas.user_mast_id
-                        WHERE area_id = ${doc.area_id} 
+                        WHERE area_id = ${area.area_id} 
                         ORDER by subarea`;
 
                         db.query(query, function (error, results, fields) {
                             if (error) throw error;
-                            if(results.length > 0) doc.subareas = [];
+                            if(results.length > 0) areas[key].subareas = [];
 
                             _.forEach(results, function(subarea) {
-                                doc.subareas.push({
+                                areas[key].subareas.push({
                                     subarea:subarea.subarea,
+                                    subarea_id:subarea.subarea_id,
+                                    area_id:subarea.area_id,
                                     user:subarea.handle,
                                     user_mast_id:subarea.user_mast_id
                                 });
                             });
 
-                            resolve(doc);
+                            resolve(0);
                         });
                     }
                     else {
-                        resolve(doc);
+                        resolve(0);
                     }
                 }));
             });
 
             return Promise.all(proms);
+        })
+        .then(function() {
+            var proms = [];
+            _.forEach(areas, function(area, key) {
+                proms.push(new Promise(function(resolve,reject) {
+                    if(_.isNumber(area.area_id)) {
+                        var query = ` SELECT circuit_id, circuit, area_id, is_subarea, colour 
+                        FROM circuit 
+                        WHERE area_id = ${area.area_id} and is_subarea = "no"
+                        ORDER BY circuit `;
+
+
+                        db.query(query, function (error, results, fields) {
+                            if (error) throw error;
+                            if(results.length > 0) {
+                                areas[key].circuits = [];
+
+                                _.forEach(results, function(circ) {
+                                    areas[key].circuits.push({
+                                        circuit_id:circ.circuit_id,
+                                        circuit:circ.circuit,
+                                        colour:circ.colour
+                                    });
+                                });
+                            }
+
+                            resolve(0);
+                        });
+                    }
+                    else {
+                        resolve(0);
+                    }
+                }));
+            });
+
+            return Promise.all(proms);
+        })
+        .then(function() {
+            var proms = [];
+            _.forEach(areas, function(area, key) {
+                _.forEach(area.subareas, function(subarea, subkey) {
+
+                    proms.push(new Promise(function(resolve,reject) {
+                        var query = ` SELECT circuit_id, circuit, area_id, is_subarea, colour 
+                        FROM circuit 
+                        WHERE area_id = ${subarea.subarea_id} and is_subarea = "yes"
+                        ORDER BY circuit `;
+
+                        db.query(query, function (error, results, fields) {
+                            if (error) throw error;
+                            if(results.length > 0) {
+                                areas[key].subareas[subkey].circuits = [];
+
+                                _.forEach(results, function(circ) {
+                                    areas[key].subareas[subkey].circuits.push({
+                                        circuit_id:circ.circuit_id,
+                                        circuit:circ.circuit,
+                                        colour:circ.colour
+                                    });
+                                });
+                            }
+
+                            resolve(0); 
+                        });
+                    }));
+
+                });
+            });
+
+            return Promise.all(proms);
+        })
+        .then(function() {
+            return areas;
         })
     ;
 }
