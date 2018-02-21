@@ -21,6 +21,7 @@ const db = mysql.createConnection(mysqlUrl);
 
 // Argument formatting
 args.option('areas', "Fetch a full list of areas");
+args.option('area', "Fetch a single area detail");
 args.option('difficulty', "Fetch a list of colors for difficulty.");
 args.option(['D', 'colour'], "Fetch a colour and details.");
 args.option('circuit','Fetch a circuit.');
@@ -42,6 +43,14 @@ if(flags.areas) {
             process.exit();
         });
 }
+if(flags.area) {
+    getArea({area_id:flags.area})
+        .then(function(res) {
+            console.log(prettyjson.render(res));
+            process.exit();
+        });
+}
+
 if(flags.difficulty) {
     getDifficulty()
         .then(function(res) {
@@ -150,6 +159,13 @@ if(flags.server) {
         getAreas()
         .then(function(areas) {
             res.send(areas);
+            next();
+        });
+    })
+    app.all("/api/getArea/:area_id", function(req,res,next) {
+        getArea({area_id:req.params.area_id})
+        .then(function(area) {
+            res.send(area);
             next();
         });
     })
@@ -471,6 +487,89 @@ function getAllcircuits(args) {
         });
     });
 }
+
+function getArea(args) {
+    var area_id = args.area_id;
+    var output = {};
+
+    var circuitQuery = `select circuit_id, circuit, area_id, approved, is_subarea, colour, user_mast_id from circuit WHERE area_id = ${area_id} AND is_subarea = 'no' order by circuit_id desc`;
+    var subAreaQuery = `select subarea_id, subarea from subareas where area_id = ${area_id}`;
+
+    return new Promise(function(resolve,reject) {
+        return new Promise(function(resolve,reject) {
+            output.circuit_count = 0;
+            output.circuits = [];
+
+            db.query(circuitQuery, function (error, results, fields) {
+                if (error) throw error;
+
+                var proms = [];
+                _.forEach(results, function(val,key) {
+                    output.circuit_count += 1;
+                    var circuit = val;
+                    proms.push(new Promise(function(resolve, reject) {
+                        var countQuery = `select count(cp_id) as count from circuit_problems where circuit_id = ${circuit.circuit_id}`;
+                        db.query(countQuery, function (error, results, fields) {
+                            circuit.problem_count = results[0].count;
+                            output.circuits.push(circuit);
+                            resolve();
+                        });
+                    }));
+                });
+
+                resolve(Promise.all(proms));   
+            })
+        })
+            .then(function(results) {
+                output.subareas = [];
+                return new Promise(function(resolve,reject) {
+                    var proms = [];
+                    db.query(subAreaQuery, function (error, results, fields) {
+                        if (error) throw error;
+
+                        _.forEach(results, function(val,key) {
+                            var subarea = val;
+                            proms.push(new Promise(function(resolve, reject) {
+                                var subarea_id = val.subarea_id;
+                                var circuitQuery = `select circuit_id, circuit, area_id, approved, is_subarea, colour, user_mast_id from circuit where area_id = ${subarea_id} and is_subarea = 'yes'`
+                                db.query(circuitQuery, function (error, results, fields) {
+                                    if (error) throw error;
+
+                                    var proms = [];
+
+                                    subarea.circuit_count = results.length;
+                                    output.circuit_count += subarea.circuit_count;
+                                    subarea.circuits = [];
+
+                                    _.forEach(results, function(val,key) {
+                                        var circuit = val;
+                                        circuit.subarea = subarea.subarea;
+                                        proms.push(new Promise(function(resolve, reject) {
+                                            var countQuery = `select count(cp_id) as count from circuit_problems where circuit_id = ${circuit.circuit_id}`;
+                                            db.query(countQuery, function (error, results, fields) {
+                                                circuit.problem_count = results[0].count;
+                                                subarea.circuits.push(circuit);
+                                                output.subareas.push(subarea);
+                                                resolve();
+                                            });
+                                        }));
+
+                                        resolve(Promise.all(proms));
+                                    });
+                                });
+                            }));
+                        });
+
+                        resolve(Promise.all(proms));
+                    })
+                });
+            })
+            .then(function() {
+                resolve(output);
+            });
+    });
+}
+
 function getProblems(args) {
     var circuitId = args.circuitId;
     var query = `select problem_order, cp_id, problem, par from circuit_problems where circuit_id = ${circuitId} order by problem_order`;
