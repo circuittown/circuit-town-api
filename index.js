@@ -500,37 +500,41 @@ function getArea(args) {
         db.query(areaQuery, function (error, results, fields) {
             if (error) throw error;
             output.area = results[0].area;
-            console.log(output.area);
             resolve();
         });
     })
     .then(function() {
         return new Promise(function(resolve,reject) {
             output.circuit_count = 0;
-            output.circuits = [];
 
             db.query(circuitQuery, function (error, results, fields) {
                 if (error) throw error;
+                output.circuits = [];
 
-                var proms = [];
-                _.forEach(results, function(val,key) {
-                    output.circuit_count += 1;
-                    var circuit = val;
-                    proms.push(new Promise(function(resolve, reject) {
-                        var countQuery = `select count(cp_id) as count from circuit_problems where circuit_id = ${circuit.circuit_id}`;
-                        db.query(countQuery, function (error, results, fields) {
-                            circuit.problem_count = results[0].count;
-                            output.circuits.push(circuit);
-                            resolve();
-                        });
-                    }));
-                });
+                if(results.length == 0) {
+                    resolve();
+                }
+                else {
+                    var proms = [];
+                    _.forEach(results, function(val,key) {
+                        output.circuit_count += 1;
+                        var circuit = val;
+                        proms.push(new Promise(function(resolve, reject) {
+                            var countQuery = `select count(cp_id) as count from circuit_problems where circuit_id = ${circuit.circuit_id}`;
+                            db.query(countQuery, function (error, results, fields) {
+                                circuit.problem_count = results[0].count;
+                                output.circuits.push(circuit);
+                                resolve(0);
+                            });
+                        }));
+                    });
 
-                resolve(Promise.all(proms));   
+                    resolve(Promise.all(proms));   
+                }
             })
         })
     })
-        .then(function(results) {
+        .then(function() {
             var subareas = [];
             return new Promise(function(resolve,reject) {
                 var proms = [];
@@ -538,33 +542,38 @@ function getArea(args) {
                     if (error) throw error;
 
                     _.forEach(results, function(val,subAreaKey) {
-                        subareas[subAreaKey] = val;
                         proms.push(new Promise(function(resolve, reject) {
                             var subarea_id = val.subarea_id;
                             var circuitQuery = `select circuit_id, circuit, area_id, approved, is_subarea, colour, user_mast_id from circuit where area_id = ${subarea_id} and is_subarea = 'yes'`
                             db.query(circuitQuery, function (error, results, fields) {
                                 if (error) throw error;
-
-                                var proms = [];
-
-                                subareas[subAreaKey].circuit_count = results.length;
-                                output.circuit_count += subareas[subAreaKey].circuit_count;
+                                subareas[subAreaKey] = val;
                                 subareas[subAreaKey].circuits = [];
 
-                                _.forEach(results, function(val,key) {
-                                    var circuit = val;
-                                    circuit.subarea = subareas[subAreaKey].subarea;
-                                    proms.push(new Promise(function(resolve, reject) {
-                                        var countQuery = `select count(cp_id) as count from circuit_problems where circuit_id = ${circuit.circuit_id}`;
-                                        db.query(countQuery, function (error, results, fields) {
-                                            circuit.problem_count = results[0].count;
-                                            subareas[subAreaKey].circuits.push(circuit);
-                                            resolve();
-                                        });
-                                    }));
+                                if(results.length == 0) {
+                                    resolve(0);
+                                }
+                                else {
+                                    var proms = [];
 
-                                    resolve(Promise.all(proms));
-                                });
+                                    subareas[subAreaKey].circuit_count = results.length;
+                                    output.circuit_count += subareas[subAreaKey].circuit_count;
+
+                                    _.forEach(results, function(val,key) {
+                                        var circuit = val;
+                                        circuit.subarea = subareas[subAreaKey].subarea;
+                                        proms.push(new Promise(function(resolve, reject) {
+                                            var countQuery = `select count(cp_id) as count from circuit_problems where circuit_id = ${circuit.circuit_id}`;
+                                            db.query(countQuery, function (error, results, fields) {
+                                                circuit.problem_count = results[0].count;
+                                                subareas[subAreaKey].circuits.push(circuit);
+                                                resolve();
+                                            });
+                                        }));
+
+                                        resolve(Promise.all(proms));
+                                    });
+                                }
                             });
                         }));
                     });
