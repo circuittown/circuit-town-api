@@ -545,7 +545,6 @@ function getArea(args) {
                             db.query(circuitQuery, function (error, results, fields) {
                                 if (error) throw error;
 
-                                console.log('hello');
                                 var proms = [];
 
                                 subareas[subAreaKey].circuit_count = results.length;
