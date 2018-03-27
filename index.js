@@ -531,35 +531,35 @@ function getArea(args) {
         })
     })
         .then(function(results) {
-            output.subareas = [];
+            var subareas = [];
             return new Promise(function(resolve,reject) {
                 var proms = [];
                 db.query(subAreaQuery, function (error, results, fields) {
                     if (error) throw error;
 
-                    _.forEach(results, function(val,key) {
-                        var subarea = val;
+                    _.forEach(results, function(val,subAreaKey) {
+                        subareas[subAreaKey] = val;
                         proms.push(new Promise(function(resolve, reject) {
                             var subarea_id = val.subarea_id;
                             var circuitQuery = `select circuit_id, circuit, area_id, approved, is_subarea, colour, user_mast_id from circuit where area_id = ${subarea_id} and is_subarea = 'yes'`
                             db.query(circuitQuery, function (error, results, fields) {
                                 if (error) throw error;
 
+                                console.log('hello');
                                 var proms = [];
 
-                                subarea.circuit_count = results.length;
-                                output.circuit_count += subarea.circuit_count;
-                                subarea.circuits = [];
+                                subareas[subAreaKey].circuit_count = results.length;
+                                output.circuit_count += subareas[subAreaKey].circuit_count;
+                                subareas[subAreaKey].circuits = [];
 
                                 _.forEach(results, function(val,key) {
                                     var circuit = val;
-                                    circuit.subarea = subarea.subarea;
+                                    circuit.subarea = subareas[subAreaKey].subarea;
                                     proms.push(new Promise(function(resolve, reject) {
                                         var countQuery = `select count(cp_id) as count from circuit_problems where circuit_id = ${circuit.circuit_id}`;
                                         db.query(countQuery, function (error, results, fields) {
                                             circuit.problem_count = results[0].count;
-                                            subarea.circuits.push(circuit);
-                                            output.subareas.push(subarea);
+                                            subareas[subAreaKey].circuits.push(circuit);
                                             resolve();
                                         });
                                     }));
@@ -570,7 +570,11 @@ function getArea(args) {
                         }));
                     });
 
-                    resolve(Promise.all(proms));
+                    Promise.all(proms)
+                    .then(() => { 
+                        output.subareas = subareas;
+                        resolve();
+                    });
                 })
             });
         })
