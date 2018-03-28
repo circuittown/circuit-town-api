@@ -409,7 +409,7 @@ function getUser(args) {
 }
 function getCircuit(args) {
     var circuitId = args.circuitId;
-    var query = `select circuit, area_id, is_subarea, colour, user_mast_id from circuit where circuit_id = ${circuitId}`;
+    var query = `select circuit, area_id, is_subarea, circuit.colour, circuit.user_mast_id , c.adjective, u.handle from circuit JOIN colour AS c ON c.colour = circuit.colour JOIN user_mast AS u ON u.user_mast_id = circuit.user_mast_id where circuit_id = ${circuitId}`;
 
     // Using var before this definition scopes it locally to the getCircuit function, but above all the callbacks that are about to happen, so they can "share" the circ object we're creating 
     var circ = {}; 
